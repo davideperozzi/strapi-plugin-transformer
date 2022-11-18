@@ -11,6 +11,7 @@ const transform = async (strapi, ctx, next) => {
 
 	// skip any requests that have ignore header
 	const transformIgnoreHeader = _.get(ctx, ['headers', 'strapi-transformer-ignore'], 'false');
+
 	if (transformIgnoreHeader === 'true') {
 		return;
 	}
@@ -26,7 +27,11 @@ const transform = async (strapi, ctx, next) => {
 
 		// ensure no error returned.
 		if (data) {
-			ctx.body['data'] = getPluginService('transformService').response(settings, data);
+			ctx.body['data'] = getPluginService('transformService').response(
+				settings,
+				data,
+				strapi.config.get('server.url', '')
+			);
 		}
 	}
 };

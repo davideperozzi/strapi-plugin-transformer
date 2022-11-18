@@ -7,6 +7,7 @@ const pluginConfigSchema = yup.object().shape({
 	responseTransforms: yup.object().shape({
 		removeAttributesKey: yup.bool(),
 		removeDataKey: yup.bool(),
+		prefixMediaUrl: yup.bool()
 	}),
 });
 

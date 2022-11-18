@@ -2,13 +2,15 @@
 
 const _ = require('lodash');
 const { removeObjectKey } = require('../util/removeObjectKey');
+const { prefixMedia } = require('../util/prefixMedia');
 
 module.exports = () => ({
 	/**
 	 *
 	 * @param {object} transforms
 	 * @param {boolean} transforms.removeAttributesKey
-	 * @param {boolean} transforms.removeDataKey
+	 * @param {boolean} transforms.removeAttributesKey
+	 * @param {boolean} transforms.prefixMediaUrl
 	 * @param {object} data
 	 * @returns {object} transformed data
 	 */
@@ -48,6 +50,7 @@ module.exports = () => ({
 			// relation(s)
 			if (_.has(value, 'data')) {
 				let relation = null;
+
 				// single
 				if (_.isObject(value.data)) {
 					relation = traverse(transforms, value.data);
@@ -89,9 +92,53 @@ module.exports = () => ({
 		return data;
 	},
 
-	response(settings, data) {
+	transformMedia: function traverse(data, prefix) {
+		_.forEach(data, (value, key) => {
+			if (!value) {
+				return;
+			}
+
+			if (
+				value.provider === 'local' &&
+				typeof value.url === 'string' &&
+				!value.url.startsWith(prefix)
+			) {
+				value.url = prefixMedia(value.url, prefix);
+
+				if (
+					typeof value.previewUrl === 'string' &&
+					!value.previewUrl.startsWith(prefix)
+				) {
+					value.previewUrl = prefixMedia(value.previewUrl, prefix);
+				}
+
+				if (_.has(value, 'formats')) {
+					_.forEach(
+						value.formats,
+						(f) => {
+							if (typeof f.url === 'string') {
+								f.url = prefixMedia(f.url, prefix)
+							}
+						}
+					);
+				}
+			}
+
+			if (_.isObject(value)) {
+				traverse(value, prefix);
+			}
+		});
+
+		return data;
+	},
+
+	response(settings, data, mediaPrefixUrl = '') {
 		if (settings && settings.responseTransforms) {
 			data = this.transformResponse(settings.responseTransforms, data);
+
+			if (settings.responseTransforms.prefixMediaUrl) {
+				data = this.transformMedia(data, mediaPrefixUrl);
+			}
 		}
 
 		return data;
